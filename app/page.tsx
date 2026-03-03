@@ -226,8 +226,6 @@ export default function Home() {
                     className="max-w-full"
                     style={{
                       imageRendering: 'pixelated',
-                      imageRendering: '-moz-crisp-edges',
-                      imageRendering: 'crisp-edges',
                     }}
                   />
                 ) : (

@@ -103,27 +103,27 @@ class SeededRandom {
 /**
  * Generate pixel art pattern
  */
-export function generatePixelPattern(options: AvatarOptions = {}): string[] {
-  const {
-    colors,
-    seed = Math.random() * 10000,
-  } = options;
+export function generatePixelPattern(options: AvatarOptions): string[] {
+  const colors = options.colors;
+  let seed = options.seed;
+
+  // Default seed if not provided
+  if (seed === undefined) {
+    seed = Math.floor(Math.random() * 10000);
+  }
 
   const rng = new SeededRandom(seed);
   const usedColors = colors || generateRandomColors(4);
 
   // 8x8 pixel grid
   const pattern: string[] = [];
+
   for (let y = 0; y < 8; y++) {
     let row = '';
-    for (let x = 0; x < 8; x++) {
-      // Different patterns for different rows
-      let shouldDraw = true;
 
+    for (let x = 0; x < 8; x++) {
       // Background pattern
-      if (rng.nextBoolean()) {
-        shouldDraw = false;
-      }
+      let shouldDraw = !rng.nextBoolean();
 
       // Face area (center)
       if (x >= 2 && x <= 5 && y >= 1 && y <= 6) {
@@ -158,15 +158,14 @@ export function generatePixelPattern(options: AvatarOptions = {}): string[] {
  * Generate pixel avatar SVG
  */
 export function generateAvatarSVG(options: AvatarOptions = {}): string {
-  const {
-    size = 128,
-    pixelSize = 16,
-    colors,
-    bgColor = generateRandomColor(),
-  } = options;
+  const size = options.size || 128;
+  const pixelSize = options.pixelSize || 16;
+  const colors = options.colors;
+  const seed = options.seed;
+  const bgColor = options.bgColor || generateRandomColor();
 
-  const gridSize = size / pixelSize;
-  const pattern = generatePixelPattern({ colors, seed: options.seed });
+  const gridSize = Math.floor(size / pixelSize);
+  const pattern = generatePixelPattern({ colors, seed });
   const usedColors = colors || generateRandomColors(4);
 
   let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
@@ -212,7 +211,7 @@ export async function generateAvatarPNG(options: AvatarOptions = {}): Promise<Bl
 
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve();
-    img.onerror = reject;
+    img.onerror = () => reject(new Error('Failed to load image'));
   });
 
   ctx.imageSmoothingEnabled = false;

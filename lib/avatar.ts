@@ -13,72 +13,23 @@ export interface Color {
   a?: number;
 }
 
-/**
- * Generate random HSL color
- */
 export function generateRandomColor(): string {
   const hue = Math.floor(Math.random() * 360);
   const saturation = 60 + Math.floor(Math.random() * 30);
   const lightness = 40 + Math.floor(Math.random() * 30);
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  return 'hsl(' + hue + ', ' + saturation + '%, ' + lightness + '%)';
 }
 
-/**
- * Generate multiple random colors
- */
 export function generateRandomColors(count: number): string[] {
   const colors: string[] = [];
-  for (let i = 0; i < count; i++) {
+  let i = 0;
+  while (i < count) {
     colors.push(generateRandomColor());
+    i++;
   }
   return colors;
 }
 
-/**
- * Parse HSL color to RGB
- */
-export function hslToRgb(hsl: string): Color {
-  const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
-  if (!match) {
-    return { r: 0, g: 0, b: 0 };
-  }
-
-  const h = parseInt(match[1]) / 360;
-  const s = parseInt(match[2]) / 100;
-  const l = parseInt(match[3]) / 100;
-
-  let r: number, g: number, b: number;
-
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-
-    const hue2rgb = (p: number, q: number, t: number): number => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-
-    r = hue2rgb(p, q, h + 1/3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
-  }
-
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
-  };
-}
-
-/**
- * Simple seeded random number generator
- */
 class SeededRandom {
   private seed: number;
 
@@ -100,99 +51,105 @@ class SeededRandom {
   }
 }
 
-/**
- * Generate pixel art pattern
- */
 export function generatePixelPattern(options: AvatarOptions): string[] {
   const colors = options.colors;
-  let seed = options.seed;
+  let seed: number;
 
-  // Default seed if not provided
-  if (seed === undefined) {
+  if (options.seed !== undefined) {
+    seed = options.seed;
+  } else {
     seed = Math.floor(Math.random() * 10000);
   }
 
   const rng = new SeededRandom(seed);
   const usedColors = colors || generateRandomColors(4);
 
-  // 8x8 pixel grid
   const pattern: string[] = [];
 
-  for (let y = 0; y < 8; y++) {
+  let y = 0;
+  while (y < 8) {
     let row = '';
-
-    for (let x = 0; x < 8; x++) {
-      // Background pattern
+    let x = 0;
+    while (x < 8) {
       let shouldDraw = !rng.nextBoolean();
 
-      // Face area (center)
       if (x >= 2 && x <= 5 && y >= 1 && y <= 6) {
         shouldDraw = rng.nextBoolean();
       }
 
-      // Eyes
       if ((x === 2 || x === 5) && (y === 3 || y === 4)) {
         shouldDraw = true;
       }
 
-      // Mouth
       if (x >= 3 && x <= 4 && y === 6) {
         shouldDraw = true;
       }
 
       if (shouldDraw) {
         const colorIndex = rng.nextInt(0, usedColors.length - 1);
-        row += colorIndex.toString();
+        row = row + colorIndex.toString();
       } else {
-        row += '-';
+        row = row + '-';
       }
+
+      x++;
     }
 
     pattern.push(row);
+    y++;
   }
 
   return pattern;
 }
 
-/**
- * Generate pixel avatar SVG
- */
 export function generateAvatarSVG(options: AvatarOptions = {}): string {
-  const size = options.size || 128;
-  const pixelSize = options.pixelSize || 16;
+  let size = 128;
+  if (options.size !== undefined) {
+    size = options.size;
+  }
+
+  let pixelSize = 16;
+  if (options.pixelSize !== undefined) {
+    pixelSize = options.pixelSize;
+  }
+
   const colors = options.colors;
   const seed = options.seed;
-  const bgColor = options.bgColor || generateRandomColor();
+  let bgColor = options.bgColor;
+  if (bgColor === undefined) {
+    bgColor = generateRandomColor();
+  }
 
   const gridSize = Math.floor(size / pixelSize);
   const pattern = generatePixelPattern({ colors, seed });
   const usedColors = colors || generateRandomColors(4);
 
-  let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+  let svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
 
-  // Background
-  svg += `<rect width="${size}" height="${size}" fill="${bgColor}" />`;
+  svg = svg + '<rect width="' + size + '" height="' + size + '" fill="' + bgColor + '" />';
 
-  // Pixel pattern
-  for (let y = 0; y < pattern.length && y < gridSize; y++) {
-    for (let x = 0; x < pattern[y].length && x < gridSize; x++) {
-      const char = pattern[y][x];
+  let py = 0;
+  while (py < pattern.length && py < gridSize) {
+    let px = 0;
+    while (px < pattern[py].length && px < gridSize) {
+      const char = pattern[py][px];
       if (char !== '-') {
         const colorIndex = parseInt(char);
         const color = usedColors[colorIndex] || usedColors[0];
-        svg += `<rect x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" />`;
+        svg = svg + '<rect x="' + (px * pixelSize) + '" y="' + (py * pixelSize) + '" width="' + pixelSize + '" height="' + pixelSize + '" fill="' + color + '" />';
       }
+
+      px++;
     }
+
+    py++;
   }
 
-  svg += '</svg>';
+  svg = svg + '</svg>';
 
   return svg;
 }
 
-/**
- * Generate avatar as PNG (browser-only)
- */
 export async function generateAvatarPNG(options: AvatarOptions = {}): Promise<Blob> {
   const svg = generateAvatarSVG(options);
   const size = options.size || 128;
@@ -224,9 +181,6 @@ export async function generateAvatarPNG(options: AvatarOptions = {}): Promise<Bl
   });
 }
 
-/**
- * Convert SVG to data URL
- */
 export function svgToDataURL(svg: string): string {
   return 'data:image/svg+xml;base64,' + btoa(svg);
 }

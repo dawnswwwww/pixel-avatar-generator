@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { generateAvatarSVG, svgToDataURL, generateRandomColors, AvatarOptions } from '@/lib/avatar';
 
@@ -27,7 +27,11 @@ export default function Home() {
   const randomize = () => {
     const newSeed = Math.floor(Math.random() * 10000);
     setSeed(newSeed);
-    setCustomColors(generateRandomColors(colorCount));
+    const newColors = generateRandomColors(colorCount);
+    setCustomColors(newColors);
+    // 直接生成新头像
+    const svg = generateAvatarSVG({ size, pixelSize, colors: newColors, seed: newSeed });
+    setAvatarSvg(svg);
   };
 
   // Download avatar
@@ -68,9 +72,9 @@ export default function Home() {
   };
 
   // Initialize
-  useState(() => {
+  useEffect(() => {
     generateAvatar();
-  });
+  }, []);
 
   return (
     <>
@@ -163,7 +167,13 @@ export default function Home() {
                   type="checkbox"
                   id="useCustomColors"
                   checked={useCustomColors}
-                  onChange={(e) => setUseCustomColors(e.target.checked)}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    setUseCustomColors(newValue);
+                    if (newValue && customColors.length === 0) {
+                      setCustomColors(generateRandomColors(colorCount));
+                    }
+                  }}
                   className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
                 />
                 <label htmlFor="useCustomColors" className="text-sm font-semibold text-gray-700">
